@@ -19,7 +19,7 @@ def criar_template_do_prompt_1():
     template = """
     Você é um professor especialista em criar questões em todos os campos de conhecimento.
     Pense passo a passo e elabore uma avaliação com {quantidade} questões do tipo {tipo}, da disciplina {disciplina},
-    para alunos do {serie}, sobre o conteúdo {conteudo} e com nível de dificuldade {dificuldade}.
+    para alunos do {serie}, sobre o conteúdo {conteudo} e/ou competência/habilidade {habilidade} da BNCC e com nível de dificuldade {dificuldade}.
 
     O formato das questões é um dos seguintes:
     - Múltipla Escolha:
@@ -78,7 +78,7 @@ def criar_template_do_prompt_1():
     """
 
     prompt = ChatPromptTemplate.from_template(template)
-    prompt.format(quantidade=4, tipo="Múltipla Escolha", disciplina="Ciências", serie="4º Ano do Ensino Fundamental", conteudo="Microrganismos", dificuldade="Médio")
+    prompt.format(quantidade=4, tipo="Múltipla Escolha", disciplina="Ciências", serie="4º Ano do Ensino Fundamental", conteudo="Microrganismos", habilidade="", dificuldade="Médio")
 
     return prompt
 
@@ -115,7 +115,7 @@ def main():
     tipo = st.selectbox("Escolha o tipo de questão", ("Múltipla Escolha", "Verdadeiro ou Falso", "Discursiva"))
     disciplina = st.selectbox("Escolha a disciplina", 
                               ("Português", "Matemática", "Geografia", "História", "Ciências", "Biologia", "Química", "Física",
-                               "Sociologia", "Filosofia", "Educação Física", "Inglês", "Espanhol"))
+                               "Sociologia", "Filosofia", "Educação Física", "Inglês", "Espanhol", "Arte"))
     serie = st.selectbox("Escolha a série dos alunos", ("1º Ano do Ensino Fundamental",
                                                         "2º Ano do Ensino Fundamental",
                                                         "3º Ano do Ensino Fundamental",
@@ -128,7 +128,8 @@ def main():
                                                         "1º Ano do Ensino Médio",
                                                         "2º Ano do Ensino Médio",
                                                         "3º Ano do Ensino Médio"))
-    conteudo = st.text_area("Digite o conteúdo das questões")
+    habilidade = st.text_area("Digite a competência/habilidade da BNCC", placeholder="Ex.: (EF01LP15) Agrupar palavras pelo critério de aproximação de significado (sinonímia) e separar palavras pelo critério de oposição de significado (antonímia).")
+    conteudo = st.text_area("Digite o conteúdo das questões", placeholder="Ex.: Sinonímia e antonímia")
     dificuldade = st.selectbox("Selecione o nível de dificuldade", ("Fácil", "Médio", "Difícil"))
 
     if 'resposta1' not in st.session_state:
@@ -138,7 +139,7 @@ def main():
         st.session_state.botao_template_2 = False
 
     if st.button("Gerar Questões"):
-        resposta1 = chain1.invoke({"quantidade":quantidade, "tipo":tipo, "disciplina":disciplina, "serie":serie, "conteudo":conteudo, "dificuldade":dificuldade})
+        resposta1 = chain1.invoke({"quantidade":quantidade, "tipo":tipo, "disciplina":disciplina, "serie":serie, "conteudo":conteudo, "habilidade":habilidade, "dificuldade":dificuldade})
         st.session_state.resposta1 = resposta1
         st.write("Questões geradas!")
         st.write(resposta1)
