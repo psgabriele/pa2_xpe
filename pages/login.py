@@ -1,23 +1,10 @@
+from db.usuarios import autenticar_usuario, criar_usuario, criar_sessao_usuario, obter_user_id
 import streamlit as st
-import mysql.connector
-from dotenv import load_dotenv
-import os
 import re
-import bcrypt
 
-load_dotenv()
-
-password = os.getenv("senha")
-
-# Função para conectar ao banco de dados MySQL
-def conectar_ao_db():
-    conexao = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password=password,
-        database="question_bank"
-    )
-    return conexao
+# Inicializa 'user_id' se não existir na sessão
+if 'user_id' not in st.session_state:
+    st.session_state['user_id'] = None
 
 # Função para validar o formato de e-mail
 def email_valido(email):
@@ -36,54 +23,6 @@ def senha_valida(senha):
         return False
     return True
 
-# Função para buscar o hash da senha armazenada no banco de dados
-def buscar_hash(email):
-    conexao = conectar_ao_db()
-    cursor = conexao.cursor()
-
-    # Verifica se o usuário existe no banco de dados
-    query = 'SELECT senha FROM usuarios WHERE email = %s'
-    cursor.execute(query, (email,))
-    resultado = cursor.fetchone()
-
-    cursor.close()
-    conexao.close()
-
-    if resultado:
-        return resultado[0] # Retorna o hash da senha
-    else:
-        return None
-
-# Função para verificar se o usuário existe e validar a senha
-def autenticar_usuario(email, senha):
-    # Buscar o hash da senha no banco de dados
-    hash_armazenado = buscar_hash(email)
-
-    if hash_armazenado:
-        # Comparar a senha fornecida com o hash armazenado
-        if bcrypt.checkpw(senha.encode('utf-8'), hash_armazenado.encode('utf-8')):
-            return True
-        else:
-            return False
-    else:
-        return False
-
-# Função para criar um novo usuário no banco de dados
-def criar_usuario(email, senha):
-    conexao = conectar_ao_db()
-    cursor = conexao.cursor()
-
-    # Criptografar a senha antes de armazenar
-    senha_criptografada = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
-
-    # Insere o novo usuário no banco de dados
-    query = 'INSERT INTO usuarios (email, senha) VALUES (%s, %s)'
-    cursor.execute(query, (email, senha_criptografada))
-
-    conexao.commit()
-    cursor.close()
-    conexao.close()
-
 # Função para exibir a página de login
 def login_page():
     st.title("Login")
@@ -96,6 +35,8 @@ def login_page():
     if st.button("Entrar"):
         # Autentica o usuário
         if autenticar_usuario(email, senha):
+            user_id = obter_user_id(email)
+            criar_sessao_usuario(user_id, email)
             st.success(f"Bem-vindo, {email}!")
             st.session_state.logged_in = True
             #st.rerun()
