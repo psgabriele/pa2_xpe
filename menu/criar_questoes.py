@@ -6,6 +6,11 @@ from langchain_google_genai import GoogleGenerativeAI
 from langchain.schema import StrOutputParser
 import streamlit as st
 
+import re
+
+from db.avaliacao import salva_avaliacao
+from db.questao import inserir_questoes_respostas
+
 load_dotenv()
 
 chave_api = os.getenv("GOOGLE_API_KEY")
@@ -75,6 +80,18 @@ def criar_template_do_prompt_1():
         <Resposta1>:
         <Resposta2>:
         ...
+
+    Todas as avaliações devem seguir o formato:
+    Questões:
+        Questão 1
+        Questão 2
+        ...
+    Respostas:
+        Resposta 1
+        Resposta 2
+        ...
+
+    Não é necessário inserir cabeçalho com as informações do formulário.
     """
 
     prompt = ChatPromptTemplate.from_template(template)
@@ -144,6 +161,22 @@ def main():
         st.write("Questões geradas!")
         st.write(resposta1)
         st.session_state.botao_template_2 = True
+
+        # Padrões ajustados para capturar as seções
+        padrao_questoes = r"## Questões:\n(.*?)## Respostas:"
+        padrao_respostas = r"## Respostas:\n(.*)"
+
+        # Extraindo perguntas e respostas
+        questoes = re.findall(padrao_questoes, resposta1, re.DOTALL)
+        respostas = re.findall(padrao_respostas, resposta1, re.DOTALL)
+
+        # Obtém o ID do usuário logado da sessão
+        usuario_id = st.session_state['user_id']
+
+        avaliacao_id = salva_avaliacao(usuario_id, quantidade, tipo, disciplina, serie, habilidade, conteudo, dificuldade)
+        
+        # Inserir perguntas e respostas relacionadas
+        inserir_questoes_respostas(avaliacao_id, questoes, respostas)
     
     prompt_template_2 = criar_template_do_prompt_2()
     chain2 = criar_chain(prompt_template_2, llm, chave_api)
